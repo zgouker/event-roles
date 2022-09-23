@@ -1,4 +1,4 @@
-import discord
+import discord,time
 
 tokenfile = open("private/token.dat","r")
 token = tokenfile.read()
@@ -12,16 +12,27 @@ event_role_dict = {}
 def make_role_name(inputString):
     return ''.join(c for c in inputString if c.isalnum())
 
+def get_role_from_event(event):
+    role_id = event_role_dict[event.id]
+    return event.guild.get_role(role_id)
+
+def get_member_from_user(server,user):
+    user_id = user.id
+    return server.get_member(user_id)
+
 async def event_create_role(event):
     role_name = "Event-" + make_role_name(event.name)
     print(role_name)
     new_role = await event.guild.create_role(name=role_name,mentionable=True)
     print(new_role.id)
     event_role_dict[event.id] = new_role.id
+    member = get_member_from_user(event.guild,user)
+    await member.add_roles(role)
+
+
 
 async def event_delete_role(event):
-    role_id = event_role_dict[event.id]
-    role = event.guild.get_role(role_id)
+    role = get_role_from_event(event)
     await role.delete()
     print("deleted")
 
@@ -53,13 +64,24 @@ async def on_scheduled_event_delete(event):
     await event_delete_role(event)
 
 @client.event
+async def on_scheduled_event_delete(event):
+    print("Update")
+    print(event)
+
+@client.event
 async def on_scheduled_event_user_add(event,user):
     print("Add")
+    role = get_role_from_event(event)
+    member = get_member_from_user(event.guild,user)
+    await member.add_roles(role)
     print(event,user)
 
 @client.event
 async def on_scheduled_event_user_remove(event,user):
     print("Remove")
+    role = get_role_from_event(event)
+    member = get_member_from_user(event.guild,user)
+    await member.remove_roles(role)
     print(event,user)
 
 
